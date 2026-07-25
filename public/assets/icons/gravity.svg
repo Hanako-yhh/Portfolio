@@ -1,0 +1,22 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="32"
+  height="32"
+  viewBox="0 0 64 64"
+  fill="none"
+  role="img"
+  aria-labelledby="gravity-logo-title"
+>
+  <title id="gravity-logo-title">Gravity</title>
+  <g
+    stroke="currentColor"
+    stroke-width="3.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M8 17.5C18.5 7.5 45.5 7.5 56 17.5"/>
+    <path d="M10.5 23C18 30 21.5 42 32 51.5C42.5 42 46 30 53.5 23"/>
+    <path d="M18 23.5C22.5 30 25.5 36 32 41.5C38.5 36 41.5 30 46 23.5"/>
+  </g>
+  <circle cx="32" cy="51.5" r="4.25" fill="currentColor"/>
+</svg>

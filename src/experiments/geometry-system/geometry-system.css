@@ -1,0 +1,405 @@
+:root {
+  color: #e8eef6;
+  background: #010205;
+  font-family: "Noto Sans SC", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#geometry-root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+button {
+  color: inherit;
+  font: inherit;
+}
+
+.geometry-system {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 100svh;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 28% 42%, rgba(32, 55, 75, 0.13), transparent 34%),
+    #010205;
+}
+
+.geometry-system__scene {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  touch-action: none;
+}
+
+.geometry-system__scene canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.geometry-system__vignette,
+.geometry-system__scanlines {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.geometry-system__vignette {
+  background:
+    radial-gradient(circle at 43% 48%, transparent 42%, rgba(0, 0, 0, 0.22) 76%, rgba(0, 0, 0, 0.6) 112%),
+    linear-gradient(180deg, rgba(1, 3, 7, 0.34), transparent 16%, transparent 82%, rgba(1, 3, 7, 0.42));
+}
+
+.geometry-system__scanlines {
+  opacity: 0.16;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0,
+    transparent 2px,
+    rgba(135, 168, 191, 0.05) 3px
+  );
+  mix-blend-mode: screen;
+}
+
+.geometry-hud {
+  position: absolute;
+  top: clamp(24px, 4.1vw, 64px);
+  right: clamp(28px, 5.8vw, 110px);
+  left: clamp(28px, 5.8vw, 110px);
+  z-index: 3;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
+  opacity: 0;
+  transform: translateY(-12px);
+  pointer-events: none;
+  transition: opacity 500ms ease, transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.geometry-hud--visible {
+  opacity: 1;
+  transform: none;
+}
+
+.geometry-hud__identity,
+.geometry-hud__technology {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.geometry-hud__identity span,
+.geometry-hud__technology,
+.geometry-hud__status {
+  color: rgba(187, 200, 213, 0.53);
+  font-family: "Orbitron", sans-serif;
+  font-size: 9px;
+}
+
+.geometry-hud__identity strong {
+  color: rgba(232, 238, 246, 0.88);
+  font-family: "Orbitron", sans-serif;
+  font-size: clamp(13px, 1.2vw, 18px);
+  font-weight: 500;
+  letter-spacing: 0.3em;
+}
+
+.geometry-hud__technology {
+  align-items: flex-end;
+  line-height: 1.7;
+}
+
+.geometry-hud__status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 4px;
+  letter-spacing: 0.18em;
+}
+
+.geometry-hud__signal {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #87cce9;
+  box-shadow: 0 0 13px rgba(135, 204, 233, 0.9);
+  animation: geometry-signal 2.8s ease-in-out infinite;
+}
+
+.geometry-focus-panel {
+  position: absolute;
+  top: 50%;
+  right: clamp(24px, 6vw, 116px);
+  z-index: 4;
+  width: min(590px, 42vw);
+  min-height: min(660px, 74vh);
+  padding: clamp(38px, 4.2vw, 72px);
+  overflow: hidden;
+  border-left: 1px solid rgba(132, 177, 202, 0.25);
+  background:
+    linear-gradient(135deg, rgba(6, 12, 19, 0.95), rgba(3, 7, 13, 0.8)),
+    rgba(2, 6, 11, 0.84);
+  box-shadow: 0 25px 90px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transform: translate(40px, -48%);
+  visibility: hidden;
+  transition:
+    opacity 600ms ease,
+    transform 900ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 900ms;
+}
+
+.geometry-focus-panel--visible {
+  opacity: 1;
+  transform: translate(0, -50%);
+  visibility: visible;
+  transition-delay: 180ms, 180ms, 0s;
+}
+
+.geometry-focus-panel__return {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 clamp(48px, 6vh, 78px);
+  padding: 0;
+  border: 0;
+  color: rgba(206, 218, 229, 0.66);
+  background: transparent;
+  cursor: pointer;
+  letter-spacing: 0.08em;
+}
+
+.geometry-focus-panel__return svg {
+  width: 19px;
+  transition: transform 280ms ease;
+}
+
+.geometry-focus-panel__return:hover {
+  color: rgba(239, 245, 250, 0.94);
+}
+
+.geometry-focus-panel__return:hover svg {
+  transform: translateX(-5px);
+}
+
+.geometry-focus-panel__heading > span {
+  color: #b69561;
+  font-family: "Orbitron", sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+}
+
+.geometry-focus-panel__heading h1 {
+  display: flex;
+  align-items: baseline;
+  gap: 22px;
+  margin: 20px 0 3px;
+  font-family: "Orbitron", sans-serif;
+  font-size: clamp(47px, 5.2vw, 86px);
+  font-weight: 400;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.geometry-focus-panel__heading h1 small {
+  color: rgba(198, 210, 221, 0.42);
+  font-family: "Noto Sans SC", sans-serif;
+  font-size: 15px;
+  font-weight: 300;
+  letter-spacing: 0.1em;
+}
+
+.geometry-focus-panel__heading p {
+  margin: 17px 0 0;
+  color: rgba(188, 201, 213, 0.55);
+  font-size: 15px;
+  letter-spacing: 0.13em;
+}
+
+.geometry-focus-panel__rule {
+  width: 100%;
+  height: 1px;
+  margin: clamp(36px, 5vh, 56px) 0;
+  background: linear-gradient(90deg, rgba(182, 149, 97, 0.72), rgba(182, 149, 97, 0.02));
+}
+
+.geometry-focus-panel__summary {
+  margin: 0;
+  color: rgba(198, 210, 221, 0.65);
+  font-size: 15px;
+  font-weight: 300;
+  line-height: 2;
+}
+
+.geometry-focus-panel__features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: clamp(36px, 5vh, 58px) 0 0;
+}
+
+.geometry-focus-panel__features div {
+  min-width: 0;
+  padding: 13px 12px;
+  border: 1px solid rgba(149, 177, 197, 0.11);
+  background: rgba(155, 187, 209, 0.025);
+}
+
+.geometry-focus-panel__features dt,
+.geometry-focus-panel__features dd {
+  margin: 0;
+}
+
+.geometry-focus-panel__features dt {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: rgba(205, 217, 228, 0.65);
+  font-size: 11px;
+}
+
+.geometry-focus-panel__features dt svg {
+  width: 13px;
+}
+
+.geometry-focus-panel__features dd {
+  margin-top: 8px;
+  overflow: hidden;
+  color: rgba(169, 185, 198, 0.4);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.geometry-system__hint {
+  position: absolute;
+  bottom: clamp(30px, 5.5vh, 62px);
+  left: 50%;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  color: rgba(189, 203, 216, 0.48);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  opacity: 0;
+  transform: translate(-50%, 10px);
+  pointer-events: none;
+  transition: opacity 600ms ease 500ms, transform 600ms ease 500ms;
+}
+
+.geometry-system__hint--visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.geometry-system__hint > span {
+  width: 5px;
+  height: 5px;
+  border: 1px solid rgba(137, 198, 224, 0.8);
+  border-radius: 50%;
+  box-shadow: 0 0 11px rgba(94, 179, 219, 0.52);
+}
+
+@keyframes geometry-signal {
+  50% { opacity: 0.28; }
+}
+
+@media (max-width: 760px) {
+  .geometry-hud {
+    top: 24px;
+    right: 22px;
+    left: 22px;
+    grid-template-columns: 1fr auto;
+  }
+
+  .geometry-hud__technology {
+    display: none;
+  }
+
+  .geometry-hud__status {
+    justify-self: end;
+    font-size: 7px;
+  }
+
+  .geometry-focus-panel {
+    top: auto;
+    right: 14px;
+    bottom: 14px;
+    left: 14px;
+    width: auto;
+    min-height: 43vh;
+    max-height: 52vh;
+    padding: 26px 26px 30px;
+    border-top: 1px solid rgba(132, 177, 202, 0.25);
+    border-left: 0;
+    transform: translateY(28px);
+  }
+
+  .geometry-focus-panel--visible {
+    transform: none;
+  }
+
+  .geometry-focus-panel__return {
+    margin-bottom: 24px;
+  }
+
+  .geometry-focus-panel__heading h1 {
+    margin-top: 13px;
+    font-size: clamp(40px, 14vw, 58px);
+  }
+
+  .geometry-focus-panel__heading p {
+    margin-top: 10px;
+    font-size: 11px;
+  }
+
+  .geometry-focus-panel__rule {
+    margin: 23px 0;
+  }
+
+  .geometry-focus-panel__summary {
+    font-size: 12px;
+    line-height: 1.8;
+  }
+
+  .geometry-focus-panel__features {
+    margin-top: 24px;
+  }
+
+  .geometry-system__hint {
+    bottom: 24px;
+    width: max-content;
+    max-width: 80vw;
+    font-size: 9px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .geometry-hud,
+  .geometry-focus-panel,
+  .geometry-system__hint,
+  .geometry-focus-panel__return svg {
+    transition-duration: 0.01ms;
+  }
+
+  .geometry-hud__signal {
+    animation: none;
+  }
+}
