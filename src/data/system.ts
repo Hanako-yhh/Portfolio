@@ -30,7 +30,9 @@ export interface PlanetData {
   equilibriumTemperatureK: number;
   palette: [string, string, string];
   texturePath: string;
+  mobileTexturePath?: string;
   cloudTexturePath?: string;
+  mobileCloudTexturePath?: string;
   textureTint?: string;
   initialPhase: number;
   hasAtmosphere: boolean;
@@ -66,6 +68,7 @@ export const planets: PlanetData[] = [
     equilibriumTemperatureK: 418,
     palette: ['#24110c', '#b8421f', '#ffb053'],
     texturePath: withBase('assets/textures/mars.jpg'),
+    mobileTexturePath: withBase('assets/textures/mars-mobile.jpg'),
     initialPhase: 0.7,
     hasAtmosphere: false,
   },
@@ -88,7 +91,9 @@ export const planets: PlanetData[] = [
     equilibriumTemperatureK: 246,
     palette: ['#0a2632', '#287f91', '#b4d7c7'],
     texturePath: withBase('assets/textures/haven-surface-fictional-hd-v1-web.jpg'),
+    mobileTexturePath: withBase('assets/textures/haven-surface-fictional-mobile-v1.jpg'),
     cloudTexturePath: withBase('assets/textures/earth-clouds.jpg'),
+    mobileCloudTexturePath: withBase('assets/textures/earth-clouds-mobile.jpg'),
     initialPhase: 2.35,
     hasAtmosphere: true,
   },
@@ -111,6 +116,7 @@ export const planets: PlanetData[] = [
     equilibriumTemperatureK: 140,
     palette: ['#513020', '#c99159', '#ead3a5'],
     texturePath: withBase('assets/textures/jupiter.jpg'),
+    mobileTexturePath: withBase('assets/textures/jupiter-mobile.jpg'),
     initialPhase: 4.1,
     hasAtmosphere: true,
     hasRings: true,
@@ -134,6 +140,7 @@ export const planets: PlanetData[] = [
     equilibriumTemperatureK: 87,
     palette: ['#06164f', '#174bc1', '#91b9ff'],
     texturePath: withBase('assets/textures/ratio-climate-hd-v1-web.jpg'),
+    mobileTexturePath: withBase('assets/textures/ratio-climate-mobile-v1.jpg'),
     initialPhase: 5.45,
     hasAtmosphere: true,
   },
