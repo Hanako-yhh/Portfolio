@@ -22,6 +22,7 @@ body,
 
 button {
   font: inherit;
+  -webkit-tap-highlight-color: transparent;
 }
 
 button:focus-visible {
@@ -893,6 +894,9 @@ button:focus-visible {
   height: 100%;
   background: #010207;
   touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .film-overlay {
@@ -1861,25 +1865,6 @@ button:focus-visible {
     width: 100%;
     height: 84px;
     transform: none;
-  }
-
-  .focus-return-zone::before {
-    position: absolute;
-    right: auto;
-    bottom: 0;
-    left: 50%;
-    width: min(62vw, 250px);
-    height: 84px;
-    background: radial-gradient(
-      ellipse at 50% 68%,
-      rgba(0, 2, 7, 0.78) 0%,
-      rgba(0, 2, 7, 0.5) 42%,
-      rgba(0, 2, 7, 0.14) 68%,
-      transparent 82%
-    );
-    content: '';
-    pointer-events: none;
-    transform: translateX(-50%);
   }
 
   .focus-return-zone__line-field {
