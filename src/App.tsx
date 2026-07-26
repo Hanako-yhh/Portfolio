@@ -348,10 +348,12 @@ function StellarSystemPage({
         </div>
       </header>
 
-      <FocusReturnInteraction
-        visible={panelVisible}
-        onReturn={() => experienceRef.current?.returnToOverview()}
-      />
+      {panelVisible && (
+        <FocusReturnInteraction
+          visible
+          onReturn={() => experienceRef.current?.returnToOverview()}
+        />
+      )}
 
       <SystemInteractionGuide
         visible={showInteractionGuide}
