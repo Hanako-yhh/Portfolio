@@ -4,6 +4,7 @@ import { FocusReturnInteraction } from './components/FocusReturnInteraction';
 import { IntroStardust } from './components/IntroStardust';
 import { SystemInteractionGuide } from './components/SystemInteractionGuide';
 import { WarpTransition } from './components/WarpTransition';
+import { withBase, withoutBase } from './config/paths';
 import { planets, visualOrbitPeriod, type PlanetData } from './data/system';
 import {
   NoventureExperience,
@@ -36,7 +37,7 @@ function rememberSystemInteractionGuide(): void {
 }
 
 function getRoute(): SiteRoute {
-  const match = window.location.pathname.match(/^\/planets\/([^/]+)\/?$/);
+  const match = withoutBase(window.location.pathname).match(/^\/planets\/([^/]+)\/?$/);
   const planet = match ? planets.find((candidate) => candidate.id === match[1]) : null;
   return planet ? { kind: 'planet', planet } : { kind: 'site' };
 }
@@ -90,19 +91,19 @@ function IntroPage({ onEnter, onOpenDetail }: IntroPageProps) {
       id: 'figma',
       name: 'Figma',
       description: '界面与原型',
-      iconPath: '/assets/software/figma.svg',
+      iconPath: withBase('assets/software/figma.svg'),
     },
     {
       id: 'codex',
       name: 'Codex',
       description: '设计工程协作',
-      iconPath: '/assets/software/codex.webp',
+      iconPath: withBase('assets/software/codex.webp'),
     },
     {
       id: 'mastergo',
       name: 'MasterGo',
       description: '协同与交付',
-      iconPath: '/assets/software/mastergo.png',
+      iconPath: withBase('assets/software/mastergo.png'),
     },
   ];
 
@@ -515,7 +516,11 @@ function App() {
 
   const openDetail = (planet: PlanetData) => {
     setResumePlanetId(planet.id);
-    window.history.pushState({ fromNoventure: true, planetId: planet.id }, '', `/planets/${planet.id}`);
+    window.history.pushState(
+      { fromNoventure: true, planetId: planet.id },
+      '',
+      withBase(`planets/${planet.id}`),
+    );
     setRoute({ kind: 'planet', planet });
   };
 
@@ -524,7 +529,11 @@ function App() {
       window.history.back();
       return;
     }
-    window.history.replaceState({ planetId: route.kind === 'planet' ? route.planet.id : null }, '', '/');
+    window.history.replaceState(
+      { planetId: route.kind === 'planet' ? route.planet.id : null },
+      '',
+      withBase(),
+    );
     setRoute({ kind: 'site' });
   };
 
