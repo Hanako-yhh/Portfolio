@@ -48,8 +48,9 @@ button:focus-visible {
 .site-view--intro {
   overflow-x: hidden;
   overflow-y: auto;
-  overscroll-behavior-y: contain;
+  overscroll-behavior-y: none;
   scrollbar-width: none;
+  touch-action: pan-y;
 }
 
 .site-view--intro::-webkit-scrollbar {
@@ -1675,6 +1676,16 @@ button:focus-visible {
 }
 
 @media (max-width: 767px) {
+  .film-overlay {
+    /*
+     * Android WebViews (including WeChat) can composite `screen` blend mode
+     * against the WebGL backing layer as a solid blue surface. Normal blending
+     * preserves the scanlines and vignette without tinting the scene.
+     */
+    mix-blend-mode: normal;
+    opacity: 0.46;
+  }
+
   .system-interaction-guide__label {
     display: none;
   }
@@ -1695,7 +1706,7 @@ button:focus-visible {
 
   .intro-page__content {
     width: calc(100% - 40px);
-    padding: 66px 0 136px;
+    padding: 66px 0 92px;
   }
 
   .intro-page {
@@ -1788,6 +1799,11 @@ button:focus-visible {
     height: 92px;
   }
 
+  .system-page__return-zone--active .system-page__return {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
   .top-hud__divider,
   .top-hud__meta {
     display: none;
@@ -1820,8 +1836,9 @@ button:focus-visible {
     bottom: 0;
     left: 0;
     width: 100%;
+    height: 42vh;
     min-height: 42vh;
-    max-height: 50vh;
+    max-height: 42vh;
     padding: 24px;
     border-top: 1px solid rgba(151, 179, 202, 0.23);
     border-left: 0;
@@ -1835,26 +1852,61 @@ button:focus-visible {
   }
 
   .focus-return-zone {
-    --return-pointer-y: 50%;
-    top: 50%;
+    top: auto;
     right: 0;
-    bottom: auto;
+    bottom: 42vh;
     left: 0;
     width: 100%;
-    height: 54px;
-    transform: translateY(-100%);
+    height: 84px;
+    transform: none;
+  }
+
+  .focus-return-zone::before {
+    position: absolute;
+    right: auto;
+    bottom: 0;
+    left: 50%;
+    width: min(62vw, 250px);
+    height: 84px;
+    background: radial-gradient(
+      ellipse at 50% 68%,
+      rgba(0, 2, 7, 0.78) 0%,
+      rgba(0, 2, 7, 0.5) 42%,
+      rgba(0, 2, 7, 0.14) 68%,
+      transparent 82%
+    );
+    content: '';
+    pointer-events: none;
+    transform: translateX(-50%);
   }
 
   .focus-return-zone__line-field {
-    display: none;
+    top: auto;
+    right: auto;
+    bottom: 0;
+    left: 50%;
+    display: block;
+    width: min(42vw, 170px);
+    height: 48px;
+    filter:
+      drop-shadow(0 1px 2px rgba(0, 0, 0, 0.96))
+      drop-shadow(0 0 6px rgba(189, 222, 245, 0.46));
+    transform: translateX(-50%);
   }
 
   .focus-return-zone__prompt,
   .focus-return-zone--active .focus-return-zone__prompt {
-    top: 50%;
-    right: 50%;
-    opacity: 0.68;
-    transform: translate(50%, -50%);
+    top: 10px;
+    right: auto;
+    left: 50%;
+    color: rgba(242, 248, 252, 0.98);
+    font-size: 10px;
+    font-weight: 500;
+    opacity: 1;
+    text-shadow:
+      0 1px 3px rgba(0, 0, 0, 1),
+      0 0 8px rgba(151, 200, 235, 0.36);
+    transform: translateX(-50%);
   }
 
   .focus-panel h1 {
