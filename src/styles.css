@@ -884,12 +884,14 @@ button:focus-visible {
 .scene {
   position: absolute;
   inset: 0;
+  background: #010207;
 }
 
 .noventure-canvas {
   display: block;
   width: 100%;
   height: 100%;
+  background: #010207;
   touch-action: none;
 }
 
