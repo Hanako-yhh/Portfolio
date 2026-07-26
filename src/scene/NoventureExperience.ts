@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { withBase } from '../config/paths';
 import {
   mapOrbitRadius,
   mapPlanetRadius,
@@ -992,8 +993,8 @@ export class NoventureExperience {
     const starMap = new THREE.Mesh(new THREE.SphereGeometry(430, 64, 40), starMapMaterial);
     this.scene.add(starMap);
     const starMapTexturePath = window.innerWidth < 768
-      ? '/assets/backgrounds/deep-star-map-2020-hd-v1-mobile.jpg'
-      : '/assets/backgrounds/deep-star-map-2020-hd-v1-web.jpg';
+      ? withBase('assets/backgrounds/deep-star-map-2020-hd-v1-mobile.jpg')
+      : withBase('assets/backgrounds/deep-star-map-2020-hd-v1-web.jpg');
     this.loadTexture(starMapTexturePath, (texture) => {
       const seamlessTexture = createSeamlessEquirectangularTexture(texture);
       this.loadedTextures.delete(texture);
@@ -1032,7 +1033,7 @@ export class NoventureExperience {
     nebula.renderOrder = -1;
     this.backgroundNebula = nebula;
     this.scene.add(nebula);
-    this.loadTexture('/assets/backgrounds/ldn-483.jpg', (texture) => {
+    this.loadTexture(withBase('assets/backgrounds/ldn-483.jpg'), (texture) => {
       nebulaMaterial.uniforms.uMap.value = texture;
     });
 
@@ -1084,7 +1085,7 @@ export class NoventureExperience {
     const starMesh = new THREE.Mesh(starGeometry, starMaterial);
     starMesh.name = 'Noventure A';
     system.add(starMesh);
-    this.loadTexture('/assets/textures/sun.jpg', (texture) => {
+    this.loadTexture(withBase('assets/textures/sun.jpg'), (texture) => {
       starMaterial.uniforms.uMap.value = texture;
       fallbackStarTexture.dispose();
     });
