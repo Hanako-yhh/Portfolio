@@ -1395,9 +1395,49 @@ export class NoventureExperience {
     this.pointer.y = -((clientY - bounds.top) / bounds.height) * 2 + 1;
     this.raycaster.setFromCamera(this.pointer, this.camera);
     const intersections = this.raycaster.intersectObjects(this.planetRuntimes.map((planet) => planet.mesh), false);
-    if (!intersections.length) return null;
-    const id = intersections[0].object.userData.planetId;
-    return this.planetRuntimes.find((planet) => planet.data.id === id) ?? null;
+    if (intersections.length) {
+      const id = intersections[0].object.userData.planetId;
+      return this.planetRuntimes.find((planet) => planet.data.id === id) ?? null;
+    }
+    if (!this.usesExpandedPlanetHitArea()) return null;
+    return this.pickPlanetByScreenProximity(clientX, clientY, bounds);
+  }
+
+  private usesExpandedPlanetHitArea(): boolean {
+    return window.matchMedia('(pointer: coarse)').matches || window.innerWidth <= 768;
+  }
+
+  private pickPlanetByScreenProximity(
+    clientX: number,
+    clientY: number,
+    bounds: DOMRect,
+  ): PlanetRuntime | null {
+    const cameraRight = new THREE.Vector3(1, 0, 0).applyQuaternion(this.camera.quaternion);
+    let nearestPlanet: PlanetRuntime | null = null;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+
+    this.planetRuntimes.forEach((planet) => {
+      const worldCenter = planet.root.getWorldPosition(new THREE.Vector3());
+      const projectedCenter = worldCenter.clone().project(this.camera);
+      if (projectedCenter.z <= -1 || projectedCenter.z >= 1) return;
+
+      const projectedEdge = worldCenter
+        .clone()
+        .addScaledVector(cameraRight, planet.visualRadius * (planet.data.hasRings ? 1.8 : 1))
+        .project(this.camera);
+      const screenX = bounds.left + (projectedCenter.x * 0.5 + 0.5) * bounds.width;
+      const screenY = bounds.top + (-projectedCenter.y * 0.5 + 0.5) * bounds.height;
+      const projectedRadius = Math.abs(projectedEdge.x - projectedCenter.x) * bounds.width * 0.5;
+      const hitRadius = Math.max(38, projectedRadius + 18);
+      const distance = Math.hypot(clientX - screenX, clientY - screenY);
+
+      if (distance <= hitRadius && distance < nearestDistance) {
+        nearestPlanet = planet;
+        nearestDistance = distance;
+      }
+    });
+
+    return nearestPlanet;
   }
 
   private setHoveredPlanet(planet: PlanetRuntime | null): void {
@@ -1441,8 +1481,12 @@ export class NoventureExperience {
     if (isMobileFocus) {
       finalViewDirection = target.clone().sub(endPosition).normalize();
       const finalCameraUp = new THREE.Vector3().crossVectors(finalCameraRight, finalViewDirection).normalize();
-      const verticalShift = planet.data.id === 'cinder' ? 2.25 : 1.15;
-      target.addScaledVector(finalCameraUp, -planet.visualRadius * verticalShift);
+      // Keep every globe on the same upper-third composition regardless of
+      // its visual radius. A fixed radius multiplier pushed smaller planets
+      // much farther upward and could crop Audacia out of the mobile frame.
+      const mobileVerticalAngle = THREE.MathUtils.degToRad(8);
+      const mobileVerticalOffset = distance * Math.tan(mobileVerticalAngle);
+      target.addScaledVector(finalCameraUp, -mobileVerticalOffset);
     }
     this.phase = 'focusing';
     this.transition = {
