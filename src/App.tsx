@@ -160,7 +160,7 @@ function IntroPage({ onEnter, onOpenDetail }: IntroPageProps) {
           ))}
         </div>
       </nav>
-      <p className="intro-page__brand">Yann product</p>
+      <p className="intro-page__brand">YANN Portfolio</p>
       <div className="intro-page__content">
         <div className="intro-profile">
           <div className="intro-profile__heading">
@@ -491,6 +491,9 @@ function App() {
   const [resumePlanetId, setResumePlanetId] = useState<string | null>(() => window.history.state?.planetId ?? null);
   const [hasSeenSystemGuide, setHasSeenSystemGuide] = useState(hasSeenSystemInteractionGuide);
   const [warpDestination, setWarpDestination] = useState<WarpDestination | null>(null);
+  const [activeSection, setActiveSection] = useState<'intro' | 'system'>(() => (
+    window.history.state?.planetId ? 'system' : 'intro'
+  ));
 
   useEffect(() => {
     window.history.scrollRestoration = 'manual';
@@ -508,10 +511,7 @@ function App() {
 
   useEffect(() => {
     if (route.kind !== 'site' || !resumePlanetId) return;
-    const frame = window.requestAnimationFrame(() => {
-      document.getElementById('system')?.scrollIntoView({ behavior: 'auto', block: 'start' });
-    });
-    return () => window.cancelAnimationFrame(frame);
+    setActiveSection('system');
   }, [route, resumePlanetId]);
 
   const openDetail = (planet: PlanetData) => {
@@ -541,34 +541,46 @@ function App() {
 
   return (
     <main
-      className={`site-shell ${warpDestination ? `site-shell--warping site-shell--warping-to-${warpDestination}` : ''}`}
+      className={`site-shell site-shell--view-${activeSection} ${warpDestination ? `site-shell--warping site-shell--warping-to-${warpDestination}` : ''}`}
     >
-      <IntroPage
-        onEnter={() => {
-          if (!warpDestination) setWarpDestination('system');
-        }}
-        onOpenDetail={openDetail}
-      />
-      <StellarSystemPage
-        initialFocusId={resumePlanetId}
-        onOpenDetail={openDetail}
-        onReturnIntro={() => {
-          if (!warpDestination) setWarpDestination('intro');
-        }}
-        showInteractionGuide={!hasSeenSystemGuide && !resumePlanetId}
-        onDismissInteractionGuide={() => {
-          rememberSystemInteractionGuide();
-          setHasSeenSystemGuide(true);
-        }}
-      />
+      <div
+        className="site-view site-view--intro"
+        aria-hidden={activeSection !== 'intro'}
+        inert={activeSection !== 'intro'}
+      >
+        <IntroPage
+          onEnter={() => {
+            if (!warpDestination) setWarpDestination('system');
+          }}
+          onOpenDetail={openDetail}
+        />
+      </div>
+      <div
+        className="site-view site-view--system"
+        aria-hidden={activeSection !== 'system'}
+        inert={activeSection !== 'system'}
+      >
+        <StellarSystemPage
+          initialFocusId={resumePlanetId}
+          onOpenDetail={openDetail}
+          onReturnIntro={() => {
+            if (!warpDestination) setWarpDestination('intro');
+          }}
+          showInteractionGuide={!hasSeenSystemGuide && !resumePlanetId}
+          onDismissInteractionGuide={() => {
+            rememberSystemInteractionGuide();
+            setHasSeenSystemGuide(true);
+          }}
+        />
+      </div>
       <WarpTransition
         active={Boolean(warpDestination)}
         direction={warpDestination === 'intro' ? 'reverse' : 'forward'}
         onTravel={() => {
           if (warpDestination === 'system') {
-            document.getElementById('system')?.scrollIntoView({ behavior: 'auto', block: 'start' });
+            setActiveSection('system');
           } else if (warpDestination === 'intro') {
-            document.querySelector('.intro-page')?.scrollIntoView({ behavior: 'auto', block: 'start' });
+            setActiveSection('intro');
           }
         }}
         onComplete={() => setWarpDestination(null)}
