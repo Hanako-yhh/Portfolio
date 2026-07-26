@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 
 interface FocusReturnInteractionProps {
   visible: boolean;
@@ -28,6 +35,7 @@ export function FocusReturnInteraction({
   const animationRef = useRef(0);
   const lineStateRef = useRef({ pointerY: 0, maxLength: maxLineLength });
   const interactionActiveRef = useRef(false);
+  const returnPointerArmedRef = useRef(false);
   const [hintActive, setHintActive] = useState(false);
 
   const clearLines = useCallback(() => {
@@ -162,6 +170,18 @@ export function FocusReturnInteraction({
     if (animationRef.current) window.cancelAnimationFrame(animationRef.current);
   }, []);
 
+  const handleReturnClick = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    const requiresFreshPointer = window.matchMedia('(max-width: 767px), (pointer: coarse)').matches;
+    const keyboardActivation = event.detail === 0;
+    if (requiresFreshPointer && !keyboardActivation && !returnPointerArmedRef.current) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    returnPointerArmedRef.current = false;
+    onReturn();
+  };
+
   return (
     <button
       ref={zoneRef}
@@ -169,9 +189,19 @@ export function FocusReturnInteraction({
       type="button"
       aria-label={ariaLabel}
       tabIndex={visible ? 0 : -1}
-      onClick={onReturn}
+      onClick={handleReturnClick}
+      onPointerDown={(event) => {
+        event.stopPropagation();
+        returnPointerArmedRef.current = true;
+      }}
       onPointerMove={handlePointerMove}
-      onPointerLeave={retractLines}
+      onPointerLeave={() => {
+        returnPointerArmedRef.current = false;
+        retractLines();
+      }}
+      onPointerCancel={() => {
+        returnPointerArmedRef.current = false;
+      }}
       onFocus={() => {
         if (window.matchMedia('(max-width: 767px)').matches) return;
         const bounds = zoneRef.current?.getBoundingClientRect();
