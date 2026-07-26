@@ -46,6 +46,9 @@ function staticRouteArtifacts() {
 }
 
 export default defineConfig(({ mode }) => ({
+  base: mode === 'pages'
+    ? (process.env.GITHUB_PAGES_BASE_PATH || '/')
+    : '/',
   plugins: [
     react(),
     ...(mode === 'pages' ? [] : [sitesBuildArtifacts()]),
