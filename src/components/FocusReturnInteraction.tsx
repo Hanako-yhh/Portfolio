@@ -40,6 +40,7 @@ export function FocusReturnInteraction({
     const canvas = canvasRef.current;
     if (!canvas) return;
     const bounds = canvas.getBoundingClientRect();
+    const centeredMobileLayout = window.matchMedia('(max-width: 767px)').matches;
     const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
     const renderWidth = Math.max(1, Math.round(bounds.width * pixelRatio));
     const renderHeight = Math.max(1, Math.round(bounds.height * pixelRatio));
@@ -61,19 +62,28 @@ export function FocusReturnInteraction({
       const lineLength = Math.min(length, bounds.width - 2) * strength * retraction;
       const alpha = strength * retraction;
       if (lineLength < 0.5 || alpha < 0.01) continue;
-      const gradient = context.createLinearGradient(bounds.width - lineLength, 0, bounds.width, 0);
-      gradient.addColorStop(0, `rgba(194, 219, 237, ${0.82 * alpha})`);
-      gradient.addColorStop(1, `rgba(142, 181, 211, ${0.08 * alpha})`);
+      const lineStart = centeredMobileLayout ? (bounds.width - lineLength) * 0.5 : bounds.width - lineLength;
+      const lineEnd = centeredMobileLayout ? (bounds.width + lineLength) * 0.5 : bounds.width;
+      const gradient = context.createLinearGradient(lineStart, 0, lineEnd, 0);
+      if (centeredMobileLayout) {
+        gradient.addColorStop(0, `rgba(142, 181, 211, ${0.08 * alpha})`);
+        gradient.addColorStop(0.5, `rgba(194, 219, 237, ${0.82 * alpha})`);
+        gradient.addColorStop(1, `rgba(142, 181, 211, ${0.08 * alpha})`);
+      } else {
+        gradient.addColorStop(0, `rgba(194, 219, 237, ${0.82 * alpha})`);
+        gradient.addColorStop(1, `rgba(142, 181, 211, ${0.08 * alpha})`);
+      }
       context.strokeStyle = gradient;
       context.lineWidth = 1;
       context.beginPath();
-      context.moveTo(bounds.width - lineLength, lineY + 0.5);
-      context.lineTo(bounds.width, lineY + 0.5);
+      context.moveTo(lineStart, lineY + 0.5);
+      context.lineTo(lineEnd, lineY + 0.5);
       context.stroke();
     }
   }, [lineSpacing, triggerRadius]);
 
   const retractLines = useCallback(() => {
+    if (window.matchMedia('(max-width: 767px)').matches) return;
     if (!interactionActiveRef.current) return;
     interactionActiveRef.current = false;
     setHintActive(false);
@@ -106,6 +116,7 @@ export function FocusReturnInteraction({
   }, [drawLines, maxLineLength]);
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (window.matchMedia('(max-width: 767px)').matches) return;
     const bounds = event.currentTarget.getBoundingClientRect();
     activateAt(Math.max(0, Math.min(bounds.height, event.clientY - bounds.top)));
   };
@@ -125,13 +136,27 @@ export function FocusReturnInteraction({
   }, [retractLines]);
 
   useEffect(() => {
-    if (visible) return;
-    interactionActiveRef.current = false;
-    setHintActive(false);
-    if (animationRef.current) window.cancelAnimationFrame(animationRef.current);
-    animationRef.current = 0;
-    clearLines();
-  }, [clearLines, visible]);
+    if (!visible) {
+      interactionActiveRef.current = false;
+      setHintActive(false);
+      if (animationRef.current) window.cancelAnimationFrame(animationRef.current);
+      animationRef.current = 0;
+      clearLines();
+      return;
+    }
+    if (!window.matchMedia('(max-width: 767px)').matches) return;
+
+    const drawPersistentLines = () => {
+      const bounds = canvasRef.current?.getBoundingClientRect();
+      if (bounds) activateAt(bounds.height / 2);
+    };
+    const frame = window.requestAnimationFrame(drawPersistentLines);
+    window.addEventListener('resize', drawPersistentLines);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener('resize', drawPersistentLines);
+    };
+  }, [activateAt, clearLines, visible]);
 
   useEffect(() => () => {
     if (animationRef.current) window.cancelAnimationFrame(animationRef.current);
@@ -148,6 +173,7 @@ export function FocusReturnInteraction({
       onPointerMove={handlePointerMove}
       onPointerLeave={retractLines}
       onFocus={() => {
+        if (window.matchMedia('(max-width: 767px)').matches) return;
         const bounds = zoneRef.current?.getBoundingClientRect();
         if (bounds) activateAt(bounds.height / 2);
       }}
