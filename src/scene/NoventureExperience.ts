@@ -825,7 +825,8 @@ export class NoventureExperience {
   private transition: CameraTransition | null = null;
   private overviewPose: CameraPose | null = null;
   private elapsedSeconds = 0;
-  private pointerStart = { x: 0, y: 0, time: 0 };
+  private pointerStart = { x: 0, y: 0, time: 0, pointerType: '' };
+  private pressedPlanet: PlanetRuntime | null = null;
   private hoveredPlanet: PlanetRuntime | null = null;
   private interactionGuideActive = false;
   private disposed = false;
@@ -961,6 +962,7 @@ export class NoventureExperience {
     this.renderer.domElement.removeEventListener('pointerdown', this.handlePointerDown);
     this.renderer.domElement.removeEventListener('pointermove', this.handlePointerMove);
     this.renderer.domElement.removeEventListener('pointerup', this.handlePointerUp);
+    this.renderer.domElement.removeEventListener('pointercancel', this.handlePointerCancel);
     this.renderer.domElement.removeEventListener('pointerleave', this.handlePointerLeave);
     this.controls.dispose();
     this.scene.traverse((object) => {
@@ -1331,6 +1333,7 @@ export class NoventureExperience {
     this.renderer.domElement.addEventListener('pointerdown', this.handlePointerDown);
     this.renderer.domElement.addEventListener('pointermove', this.handlePointerMove);
     this.renderer.domElement.addEventListener('pointerup', this.handlePointerUp);
+    this.renderer.domElement.addEventListener('pointercancel', this.handlePointerCancel);
     this.renderer.domElement.addEventListener('pointerleave', this.handlePointerLeave);
   }
 
@@ -1387,7 +1390,15 @@ export class NoventureExperience {
   };
 
   private readonly handlePointerDown = (event: PointerEvent): void => {
-    this.pointerStart = { x: event.clientX, y: event.clientY, time: performance.now() };
+    this.pointerStart = {
+      x: event.clientX,
+      y: event.clientY,
+      time: performance.now(),
+      pointerType: event.pointerType,
+    };
+    this.pressedPlanet = !this.interactionGuideActive && this.phase === 'overview'
+      ? this.pickPlanet(event.clientX, event.clientY)
+      : null;
   };
 
   private readonly handlePointerMove = (event: PointerEvent): void => {
@@ -1400,25 +1411,43 @@ export class NoventureExperience {
   };
 
   private readonly handlePointerLeave = (): void => {
+    this.pressedPlanet = null;
+    this.setHoveredPlanet(null);
+  };
+
+  private readonly handlePointerCancel = (): void => {
+    this.pressedPlanet = null;
     this.setHoveredPlanet(null);
   };
 
   private readonly handlePointerUp = (event: PointerEvent): void => {
+    const pressedPlanet = this.pressedPlanet;
+    this.pressedPlanet = null;
     if (this.interactionGuideActive) return;
     const distance = Math.hypot(event.clientX - this.pointerStart.x, event.clientY - this.pointerStart.y);
     const duration = performance.now() - this.pointerStart.time;
-    if (distance >= 6 || duration >= 350) return;
+    const mobileTap = this.pointerStart.pointerType === 'touch' || this.usesExpandedPlanetHitArea();
+    const maximumTapDistance = mobileTap ? 16 : 6;
+    const maximumTapDuration = mobileTap ? 700 : 350;
+    if (distance >= maximumTapDistance || duration >= maximumTapDuration) return;
     if (this.phase === 'focused') {
       this.returnToOverview();
       return;
     }
     if (this.phase !== 'overview') return;
-    const hit = this.pickPlanet(event.clientX, event.clientY);
+    // Preserve the target captured when the finger first touched the moving
+    // planet. Small inner planets can otherwise leave the tap point before
+    // pointerup on slower mobile WebViews.
+    const hit = pressedPlanet ?? this.pickPlanet(event.clientX, event.clientY);
     if (hit) this.startFocus(hit);
   };
 
   private pickPlanet(clientX: number, clientY: number): PlanetRuntime | null {
     const bounds = this.renderer.domElement.getBoundingClientRect();
+    if (this.usesExpandedPlanetHitArea()) {
+      const proximityHit = this.pickPlanetByScreenProximity(clientX, clientY, bounds);
+      if (proximityHit) return proximityHit;
+    }
     this.pointer.x = ((clientX - bounds.left) / bounds.width) * 2 - 1;
     this.pointer.y = -((clientY - bounds.top) / bounds.height) * 2 + 1;
     this.raycaster.setFromCamera(this.pointer, this.camera);
@@ -1427,8 +1456,7 @@ export class NoventureExperience {
       const id = intersections[0].object.userData.planetId;
       return this.planetRuntimes.find((planet) => planet.data.id === id) ?? null;
     }
-    if (!this.usesExpandedPlanetHitArea()) return null;
-    return this.pickPlanetByScreenProximity(clientX, clientY, bounds);
+    return null;
   }
 
   private usesExpandedPlanetHitArea(): boolean {
@@ -1456,7 +1484,9 @@ export class NoventureExperience {
       const screenX = bounds.left + (projectedCenter.x * 0.5 + 0.5) * bounds.width;
       const screenY = bounds.top + (-projectedCenter.y * 0.5 + 0.5) * bounds.height;
       const projectedRadius = Math.abs(projectedEdge.x - projectedCenter.x) * bounds.width * 0.5;
-      const hitRadius = Math.max(38, projectedRadius + 18);
+      const compactInnerPlanet = planet.visualRadius <= 2.8;
+      const minimumHitRadius = compactInnerPlanet ? 52 : 44;
+      const hitRadius = Math.max(minimumHitRadius, projectedRadius + 22);
       const distance = Math.hypot(clientX - screenX, clientY - screenY);
 
       if (distance <= hitRadius && distance < nearestDistance) {
