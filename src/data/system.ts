@@ -1,3 +1,5 @@
+import { withBase } from '../config/paths';
+
 export type PlanetKind = 'rocky-hot' | 'rocky-temperate' | 'gas-giant' | 'ice-giant';
 
 export interface StarData {
@@ -63,7 +65,7 @@ export const planets: PlanetData[] = [
     bondAlbedo: 0.15,
     equilibriumTemperatureK: 418,
     palette: ['#24110c', '#b8421f', '#ffb053'],
-    texturePath: '/assets/textures/mars.jpg',
+    texturePath: withBase('assets/textures/mars.jpg'),
     initialPhase: 0.7,
     hasAtmosphere: false,
   },
@@ -85,8 +87,8 @@ export const planets: PlanetData[] = [
     bondAlbedo: 0.3,
     equilibriumTemperatureK: 246,
     palette: ['#0a2632', '#287f91', '#b4d7c7'],
-    texturePath: '/assets/textures/haven-surface-fictional-hd-v1-web.jpg',
-    cloudTexturePath: '/assets/textures/earth-clouds.jpg',
+    texturePath: withBase('assets/textures/haven-surface-fictional-hd-v1-web.jpg'),
+    cloudTexturePath: withBase('assets/textures/earth-clouds.jpg'),
     initialPhase: 2.35,
     hasAtmosphere: true,
   },
@@ -108,7 +110,7 @@ export const planets: PlanetData[] = [
     bondAlbedo: 0.34,
     equilibriumTemperatureK: 140,
     palette: ['#513020', '#c99159', '#ead3a5'],
-    texturePath: '/assets/textures/jupiter.jpg',
+    texturePath: withBase('assets/textures/jupiter.jpg'),
     initialPhase: 4.1,
     hasAtmosphere: true,
     hasRings: true,
@@ -131,7 +133,7 @@ export const planets: PlanetData[] = [
     bondAlbedo: 0.29,
     equilibriumTemperatureK: 87,
     palette: ['#06164f', '#174bc1', '#91b9ff'],
-    texturePath: '/assets/textures/ratio-climate-hd-v1-web.jpg',
+    texturePath: withBase('assets/textures/ratio-climate-hd-v1-web.jpg'),
     initialPhase: 5.45,
     hasAtmosphere: true,
   },
