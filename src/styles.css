@@ -98,7 +98,6 @@ button:focus-visible {
   background: transparent;
   pointer-events: auto;
   cursor: wait;
-  animation: warp-veil 1500ms linear both;
 }
 
 .warp-transition canvas {
@@ -129,10 +128,73 @@ button:focus-visible {
   mix-blend-mode: screen;
 }
 
-@keyframes warp-veil {
-  0% { opacity: 0; }
-  7%, 84% { opacity: 1; }
-  100% { opacity: 0; }
+.warp-transition__status {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: max(52px, 9svh);
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  min-width: min(72vw, 320px);
+  color: rgba(213, 229, 241, 0);
+  text-align: center;
+  transform: translateX(-50%) translateY(8px);
+  opacity: 0;
+  transition:
+    color 360ms ease,
+    opacity 360ms ease,
+    transform 520ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  pointer-events: none;
+}
+
+.warp-transition--waiting .warp-transition__status {
+  color: rgba(213, 229, 241, 0.76);
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.warp-transition__status span {
+  color: rgba(166, 195, 218, 0.5);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 8px;
+  letter-spacing: 0.22em;
+}
+
+.warp-transition__status strong {
+  font-size: 12px;
+  font-weight: 300;
+  letter-spacing: 0.22em;
+}
+
+.warp-transition__status i {
+  position: relative;
+  display: block;
+  width: 116px;
+  height: 1px;
+  margin-top: 4px;
+  overflow: hidden;
+  background: rgba(151, 192, 222, 0.16);
+}
+
+.warp-transition__status i::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(208, 235, 251, 0.82),
+    transparent
+  );
+  transform: translateX(-100%);
+  animation: warp-status-scan 1.4s ease-in-out infinite;
+}
+
+@keyframes warp-status-scan {
+  0% { transform: translateX(-100%); }
+  55%,
+  100% { transform: translateX(100%); }
 }
 
 @keyframes intro-warp-out {
@@ -250,7 +312,7 @@ button:focus-visible {
   }
 
   .warp-transition {
-    animation-duration: 140ms;
+    background: rgba(1, 4, 12, 0.82);
   }
 
   .warp-transition__core {
