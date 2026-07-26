@@ -1002,6 +1002,8 @@ export class NoventureExperience {
   }
 
   private buildScene(): void {
+    const useMobileTextures = window.innerWidth < 768
+      || window.matchMedia('(pointer: coarse)').matches;
     this.starfield = createStarfield();
     this.scene.add(this.starfield);
 
@@ -1016,16 +1018,15 @@ export class NoventureExperience {
     });
     const starMap = new THREE.Mesh(new THREE.SphereGeometry(430, 64, 40), starMapMaterial);
     this.scene.add(starMap);
-    const useMobileStarMap = window.innerWidth < 768;
-    const starMapTexturePath = useMobileStarMap
-      ? withBase('assets/backgrounds/deep-star-map-2020-hd-v1-mobile.jpg')
+    const starMapTexturePath = useMobileTextures
+      ? withBase('assets/backgrounds/deep-star-map-2020-mobile-v2.jpg')
       : withBase('assets/backgrounds/deep-star-map-2020-hd-v1-web.jpg');
     this.loadTexture(starMapTexturePath, (texture) => {
       let resolvedTexture: THREE.Texture = texture;
       // Avoid the CPU-heavy getImageData seam pass in mobile WebViews. If the
       // desktop pass fails, retain the decoded source instead of exposing the
       // fallback color.
-      if (!useMobileStarMap) {
+      if (!useMobileTextures) {
         try {
           resolvedTexture = createSeamlessEquirectangularTexture(texture);
         } catch (error) {
@@ -1074,7 +1075,9 @@ export class NoventureExperience {
     nebula.renderOrder = -1;
     this.backgroundNebula = nebula;
     this.scene.add(nebula);
-    this.loadTexture(withBase('assets/backgrounds/ldn-483.jpg'), (texture) => {
+    this.loadTexture(withBase(useMobileTextures
+      ? 'assets/backgrounds/ldn-483-mobile.jpg'
+      : 'assets/backgrounds/ldn-483.jpg'), (texture) => {
       nebulaMaterial.uniforms.uMap.value = texture;
     });
 
@@ -1126,7 +1129,9 @@ export class NoventureExperience {
     const starMesh = new THREE.Mesh(starGeometry, starMaterial);
     starMesh.name = 'Noventure A';
     system.add(starMesh);
-    this.loadTexture(withBase('assets/textures/sun.jpg'), (texture) => {
+    this.loadTexture(withBase(useMobileTextures
+      ? 'assets/textures/sun-mobile.jpg'
+      : 'assets/textures/sun.jpg'), (texture) => {
       starMaterial.uniforms.uMap.value = texture;
       fallbackStarTexture.dispose();
     });
@@ -1229,8 +1234,11 @@ export class NoventureExperience {
       hoverOutline.visible = false;
       root.add(hoverOutline);
 
-      this.loadTexture(data.texturePath, (texture) => {
-        const resolvedTexture = isHaven || isIceGiant
+      const surfaceTexturePath = useMobileTextures && data.mobileTexturePath
+        ? data.mobileTexturePath
+        : data.texturePath;
+      this.loadTexture(surfaceTexturePath, (texture) => {
+        const resolvedTexture = !useMobileTextures && (isHaven || isIceGiant)
           ? createSeamlessEquirectangularTexture(texture)
           : texture;
         if (resolvedTexture !== texture) {
@@ -1261,8 +1269,13 @@ export class NoventureExperience {
         clouds.visible = !focusOnlyClimate;
         root.add(clouds);
         if (data.cloudTexturePath) {
-          this.loadTexture(data.cloudTexturePath, (texture) => {
-            const resolvedTexture = isHaven ? createSeamlessEquirectangularTexture(texture) : texture;
+          const cloudTexturePath = useMobileTextures && data.mobileCloudTexturePath
+            ? data.mobileCloudTexturePath
+            : data.cloudTexturePath;
+          this.loadTexture(cloudTexturePath, (texture) => {
+            const resolvedTexture = !useMobileTextures && isHaven
+              ? createSeamlessEquirectangularTexture(texture)
+              : texture;
             if (resolvedTexture !== texture) {
               this.loadedTextures.delete(texture);
               texture.dispose();
