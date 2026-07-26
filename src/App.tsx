@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FocusReturnInteraction } from './components/FocusReturnInteraction';
 import { IntroStardust } from './components/IntroStardust';
 import { SystemInteractionGuide } from './components/SystemInteractionGuide';
@@ -249,6 +249,7 @@ interface StellarSystemPageProps {
   initialFocusId: string | null;
   onOpenDetail: (planet: PlanetData) => void;
   onReturnIntro: () => void;
+  onAssetsStateChange: (ready: boolean) => void;
   showInteractionGuide: boolean;
   onDismissInteractionGuide: () => void;
 }
@@ -257,6 +258,7 @@ function StellarSystemPage({
   initialFocusId,
   onOpenDetail,
   onReturnIntro,
+  onAssetsStateChange,
   showInteractionGuide,
   onDismissInteractionGuide,
 }: StellarSystemPageProps) {
@@ -269,6 +271,9 @@ function StellarSystemPage({
 
   useEffect(() => {
     if (!sceneRef.current) return;
+    let cancelled = false;
+    let focusFrame = 0;
+    onAssetsStateChange(false);
     const experience = new NoventureExperience(sceneRef.current);
     experienceRef.current = experience;
     experience.setInteractionGuideActive(showInteractionGuide);
@@ -277,16 +282,21 @@ function StellarSystemPage({
       setFocusedPlanet(snapshot.focusedPlanet);
       setElapsed(snapshot.elapsedSeconds);
     });
-    const focusFrame = initialFocusId
-      ? window.requestAnimationFrame(() => experience.focusPlanetById(initialFocusId))
-      : 0;
+    void experience.whenAssetsReady().then(() => {
+      if (cancelled) return;
+      onAssetsStateChange(true);
+      if (initialFocusId) {
+        focusFrame = window.requestAnimationFrame(() => experience.focusPlanetById(initialFocusId));
+      }
+    });
     return () => {
+      cancelled = true;
       if (focusFrame) window.cancelAnimationFrame(focusFrame);
       unsubscribe();
       experience.dispose();
       experienceRef.current = null;
     };
-  }, [initialFocusId]);
+  }, [initialFocusId, onAssetsStateChange]);
 
   useEffect(() => {
     const experience = experienceRef.current;
@@ -493,9 +503,13 @@ function App() {
   const [resumePlanetId, setResumePlanetId] = useState<string | null>(() => window.history.state?.planetId ?? null);
   const [hasSeenSystemGuide, setHasSeenSystemGuide] = useState(hasSeenSystemInteractionGuide);
   const [warpDestination, setWarpDestination] = useState<WarpDestination | null>(null);
+  const [systemAssetsReady, setSystemAssetsReady] = useState(false);
   const [activeSection, setActiveSection] = useState<'intro' | 'system'>(() => (
     window.history.state?.planetId ? 'system' : 'intro'
   ));
+  const handleAssetsStateChange = useCallback((ready: boolean) => {
+    setSystemAssetsReady(ready);
+  }, []);
 
   useEffect(() => {
     window.history.scrollRestoration = 'manual';
@@ -568,7 +582,8 @@ function App() {
           onReturnIntro={() => {
             if (!warpDestination) setWarpDestination('intro');
           }}
-          showInteractionGuide={!hasSeenSystemGuide && !resumePlanetId}
+          onAssetsStateChange={handleAssetsStateChange}
+          showInteractionGuide={systemAssetsReady && !hasSeenSystemGuide && !resumePlanetId}
           onDismissInteractionGuide={() => {
             rememberSystemInteractionGuide();
             setHasSeenSystemGuide(true);
@@ -578,6 +593,7 @@ function App() {
       <WarpTransition
         active={Boolean(warpDestination)}
         direction={warpDestination === 'intro' ? 'reverse' : 'forward'}
+        ready={warpDestination !== 'system' || systemAssetsReady}
         onTravel={() => {
           if (warpDestination === 'system') {
             setActiveSection('system');
