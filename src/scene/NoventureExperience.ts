@@ -815,6 +815,14 @@ export class NoventureExperience {
   private readonly pointer = new THREE.Vector2();
   private readonly planetRuntimes: PlanetRuntime[] = [];
   private readonly loadedTextures = new Set<THREE.Texture>();
+  private pendingTextureLoads = 0;
+  private textureLoadBatchClosed = false;
+  private assetFinalizationStarted = false;
+  private assetsReady = false;
+  private resolveAssetsReady!: () => void;
+  private readonly assetsReadyPromise = new Promise<void>((resolve) => {
+    this.resolveAssetsReady = resolve;
+  });
   private starfield: THREE.Points | null = null;
   private systemDust: THREE.Points | null = null;
   private backgroundNebula: THREE.Mesh | null = null;
@@ -872,6 +880,8 @@ export class NoventureExperience {
     this.composer.addPass(bloom);
 
     this.buildScene();
+    this.textureLoadBatchClosed = true;
+    this.checkAssetReadiness();
     this.bindEvents();
     this.resize();
     this.frameWholeSystem();
@@ -882,6 +892,10 @@ export class NoventureExperience {
     this.listeners.add(listener);
     listener(this.snapshot());
     return () => this.listeners.delete(listener);
+  }
+
+  whenAssetsReady(): Promise<void> {
+    return this.assetsReadyPromise;
   }
 
   focusPlanetById(id: string): void {
@@ -955,6 +969,10 @@ export class NoventureExperience {
 
   dispose(): void {
     this.disposed = true;
+    if (!this.assetsReady) {
+      this.assetsReady = true;
+      this.resolveAssetsReady();
+    }
     cancelAnimationFrame(this.animationFrame);
     window.removeEventListener('resize', this.resize);
     window.removeEventListener('keydown', this.handleKeyDown);
@@ -1305,25 +1323,76 @@ export class NoventureExperience {
     onLoad: (texture: THREE.Texture) => void,
     onError?: () => void,
   ): void {
+    this.pendingTextureLoads += 1;
+    let settled = false;
+    const settle = () => {
+      if (settled) return;
+      settled = true;
+      this.pendingTextureLoads = Math.max(0, this.pendingTextureLoads - 1);
+      this.checkAssetReadiness();
+    };
+
     new THREE.TextureLoader().load(
       path,
       (texture) => {
         if (this.disposed) {
           texture.dispose();
+          settle();
           return;
         }
-        texture.colorSpace = THREE.SRGBColorSpace;
-        texture.wrapS = THREE.RepeatWrapping;
-        texture.anisotropy = Math.min(8, this.renderer.capabilities.getMaxAnisotropy());
-        this.loadedTextures.add(texture);
-        onLoad(texture);
+        try {
+          texture.colorSpace = THREE.SRGBColorSpace;
+          texture.wrapS = THREE.RepeatWrapping;
+          texture.anisotropy = Math.min(8, this.renderer.capabilities.getMaxAnisotropy());
+          this.loadedTextures.add(texture);
+          onLoad(texture);
+        } finally {
+          settle();
+        }
       },
       undefined,
       () => {
         console.warn(`Texture failed to load: ${path}`);
-        onError?.();
+        try {
+          onError?.();
+        } finally {
+          settle();
+        }
       },
     );
+  }
+
+  private checkAssetReadiness(): void {
+    if (
+      this.disposed
+      || this.assetsReady
+      || this.assetFinalizationStarted
+      || !this.textureLoadBatchClosed
+      || this.pendingTextureLoads > 0
+    ) {
+      return;
+    }
+
+    this.assetFinalizationStarted = true;
+    void this.finalizeAssetReadiness();
+  }
+
+  private async finalizeAssetReadiness(): Promise<void> {
+    try {
+      await this.renderer.compileAsync(this.scene, this.camera);
+      if (this.disposed) return;
+      this.composer.render();
+      await new Promise<void>((resolve) => {
+        window.requestAnimationFrame(() => resolve());
+      });
+    } catch (error) {
+      console.warn('WebGL asset warmup did not complete cleanly; continuing with loaded fallbacks.', error);
+    } finally {
+      if (!this.disposed && !this.assetsReady) {
+        this.assetsReady = true;
+        this.resolveAssetsReady();
+      }
+    }
   }
 
   private bindEvents(): void {
