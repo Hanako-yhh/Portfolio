@@ -840,6 +840,7 @@ export class NoventureExperience {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 0.92;
+    this.renderer.setClearColor(0x010207, 1);
     this.renderer.domElement.setAttribute('aria-label', 'Noventure 交互式恒星系');
     this.renderer.domElement.className = 'noventure-canvas';
     container.appendChild(this.renderer.domElement);
@@ -985,23 +986,43 @@ export class NoventureExperience {
     this.scene.add(this.starfield);
 
     const starMapMaterial = new THREE.MeshBasicMaterial({
-      color: 0x36465c,
+      // Keep the fallback identical to the page background. Some Android
+      // WebViews cannot finish the canvas-based sky-map preprocessing; the
+      // previous blue-gray fallback then appeared as a solid blue backdrop.
+      color: 0x010207,
       side: THREE.BackSide,
       fog: false,
       depthWrite: false,
     });
     const starMap = new THREE.Mesh(new THREE.SphereGeometry(430, 64, 40), starMapMaterial);
     this.scene.add(starMap);
-    const starMapTexturePath = window.innerWidth < 768
+    const useMobileStarMap = window.innerWidth < 768;
+    const starMapTexturePath = useMobileStarMap
       ? withBase('assets/backgrounds/deep-star-map-2020-hd-v1-mobile.jpg')
       : withBase('assets/backgrounds/deep-star-map-2020-hd-v1-web.jpg');
     this.loadTexture(starMapTexturePath, (texture) => {
-      const seamlessTexture = createSeamlessEquirectangularTexture(texture);
-      this.loadedTextures.delete(texture);
-      texture.dispose();
-      this.loadedTextures.add(seamlessTexture);
-      starMapMaterial.map = seamlessTexture;
+      let resolvedTexture: THREE.Texture = texture;
+      // Avoid the CPU-heavy getImageData seam pass in mobile WebViews. If the
+      // desktop pass fails, retain the decoded source instead of exposing the
+      // fallback color.
+      if (!useMobileStarMap) {
+        try {
+          resolvedTexture = createSeamlessEquirectangularTexture(texture);
+        } catch (error) {
+          console.warn('Sky-map seam processing failed; using source texture.', error);
+        }
+      }
+      if (resolvedTexture !== texture) {
+        this.loadedTextures.delete(texture);
+        texture.dispose();
+        this.loadedTextures.add(resolvedTexture);
+      }
+      starMapMaterial.map = resolvedTexture;
       starMapMaterial.color.set(0x899bb1);
+      starMapMaterial.needsUpdate = true;
+    }, () => {
+      starMapMaterial.map = null;
+      starMapMaterial.color.set(0x010207);
       starMapMaterial.needsUpdate = true;
     });
 
@@ -1277,7 +1298,11 @@ export class NoventureExperience {
     system.add(this.systemDust);
   }
 
-  private loadTexture(path: string, onLoad: (texture: THREE.Texture) => void): void {
+  private loadTexture(
+    path: string,
+    onLoad: (texture: THREE.Texture) => void,
+    onError?: () => void,
+  ): void {
     new THREE.TextureLoader().load(
       path,
       (texture) => {
@@ -1292,7 +1317,10 @@ export class NoventureExperience {
         onLoad(texture);
       },
       undefined,
-      () => console.warn(`Texture failed to load: ${path}`),
+      () => {
+        console.warn(`Texture failed to load: ${path}`);
+        onError?.();
+      },
     );
   }
 
